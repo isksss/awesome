@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f7fafc;
+}
+
+.markdown-body {
+  line-height: 1.85;
+}
+
+.markdown-body h1 {
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 800;
+  margin: 0 0 1.5rem;
+}
+
+.markdown-body h2 {
+  font-size: 1.45rem;
+  line-height: 1.35;
+  font-weight: 750;
+  margin: 2.25rem 0 0.8rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #d8e0ea;
+}
+
+.markdown-body h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.markdown-body p,
+.markdown-body li {
+  color: #263244;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.4rem;
+}
+
+.markdown-body li + li {
+  margin-top: 0.25rem;
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+  background: #111827;
+  color: #f8fafc;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+
+.markdown-body :not(pre) > code {
+  background: #e8eef6;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  color: #172033;
+}
+
+.markdown-body blockquote {
+  margin-left: 0;
+  border-left: 4px solid #0f6b74;
+  background: #ffffff;
+  padding: 0.75rem 1rem;
+  color: #526070;
+}
+
+.slide-body {
+  height: 100%;
+  overflow: hidden;
+  font-size: clamp(1rem, 2.1vw, 1.75rem);
+  line-height: 1.55;
+}
+
+.slide-body h1 {
+  color: #0a4650;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.15;
+  margin: 0 0 1.5rem;
+}
+
+.slide-body h2 {
+  color: #0a4650;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  line-height: 1.2;
+  margin: 0 0 1.25rem;
+}
+
+.slide-body h3 {
+  color: #0a4650;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  margin: 1rem 0 0.5rem;
+}
+
+.slide-body p,
+.slide-body li {
+  color: #172033;
+}
+
+.slide-body ul,
+.slide-body ol {
+  padding-left: 1.4em;
+}
+
+.slide-body pre {
+  max-height: 42vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+  background: #111827;
+  color: #f8fafc;
+  padding: 0.8rem;
+  font-size: clamp(0.75rem, 1.35vw, 1.05rem);
+}
+
+.slide-body code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.slide-body :not(pre) > code {
+  background: #e8eef6;
+  border-radius: 4px;
+  padding: 0.05rem 0.25rem;
+}
+
+.mermaid-static {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.mermaid-static svg {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+  height: auto;
+}

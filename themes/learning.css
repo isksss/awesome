@@ -1,5 +1,6 @@
 /*
 @theme learning
+@size 16:9 1280px 720px
 */
 
 @import "default";
@@ -105,14 +106,22 @@ pre {
   color: #f8fafc;
   border-radius: 8px;
   padding: 18px;
-  font-size: 20px;
-  line-height: 1.45;
+  font-size: 18px;
+  line-height: 1.38;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  box-sizing: border-box;
 }
 
 pre code {
   background: transparent;
   color: inherit;
   padding: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 table {

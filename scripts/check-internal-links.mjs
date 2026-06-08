@@ -4,7 +4,6 @@ import { listMarkdownFiles, rootDir } from "./lib.mjs";
 
 const files = [
   "README.md",
-  "docs/review-policy.md",
   ...listMarkdownFiles().map((file) => path.relative(rootDir, file)),
 ].filter((file) => fs.existsSync(path.join(rootDir, file)));
 

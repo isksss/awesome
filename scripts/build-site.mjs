@@ -1,15 +1,27 @@
 import fs from "node:fs";
 import path from "node:path";
-import { escapeHtml, getLessons, rootDir } from "./lib.mjs";
+import { getLessons, rootDir } from "./lib.mjs";
 
-const outDir = path.join(rootDir, "dist/site");
+const outDir = path.join(rootDir, "app", "data");
 fs.mkdirSync(outDir, { recursive: true });
+const publicDocsDir = path.join(rootDir, "public", "docs");
+
+const chapterLabels = {
+  fundamentals: "基礎ツール",
+  web: "Web",
+  security: "Security",
+  network: "Network",
+  db: "DB",
+};
 
 function copyDir(source, target) {
   fs.mkdirSync(target, { recursive: true });
   for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
     const sourcePath = path.join(source, entry.name);
     const targetPath = path.join(target, entry.name);
+    if (path.relative(rootDir, sourcePath).startsWith("docs/process")) {
+      continue;
+    }
     if (entry.isDirectory()) {
       copyDir(sourcePath, targetPath);
     } else if (entry.isFile()) {
@@ -18,66 +30,68 @@ function copyDir(source, target) {
   }
 }
 
-const lessons = getLessons();
-const chapters = Map.groupBy(lessons, (lesson) => lesson.data.chapter);
+function firstParagraph(content) {
+  const cleaned = content
+    .replace(/^---\n[\s\S]*?\n---\n/, "")
+    .replace(/^<!--\s*_class:\s*title\s*-->\n*/gm, "")
+    .replace(/^---$/gm, "");
+  const paragraph = cleaned
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .find((block) => block && !block.startsWith("#") && !block.startsWith("```") && !block.startsWith("- "));
+  return paragraph?.replace(/\s+/g, " ").slice(0, 120) ?? "";
+}
 
-const chapterHtml = [...chapters.entries()]
-  .map(([chapter, items]) => {
-    const cards = items
-      .map((lesson) => {
-        const title = escapeHtml(lesson.data.title);
-        const audience = escapeHtml(lesson.data.audience);
-        const updated = escapeHtml(lesson.data.updated);
-        const chapter = escapeHtml(lesson.data.chapter);
-        const basename = escapeHtml(lesson.basename);
-        return `<li>
-          <strong>${title}</strong>
-          <span>${audience} / updated ${updated}</span>
-          <a href="./slides/${chapter}/${basename}.html">HTML</a>
-          <a href="./pdf/${chapter}/${basename}.pdf">PDF</a>
-          <a href="./${escapeHtml(lesson.relativePath)}">Markdown</a>
-        </li>`;
-      })
-      .join("\n");
-    return `<section><h2>${escapeHtml(chapter)}</h2><ol>${cards}</ol></section>`;
-  })
-  .join("\n");
+function routeSlugFor(relativePath) {
+  return relativePath.replace(/^docs\//, "").replace(/\.md$/, "");
+}
 
-const html = `<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Web Application Practice Materials</title>
-  <style>
-    :root { color-scheme: light; font-family: system-ui, sans-serif; }
-    body { margin: 0; color: #1f2937; background: #f8fafc; }
-    header { padding: 48px 24px 24px; background: #ffffff; border-bottom: 1px solid #dbe3ee; }
-    main { max-width: 1040px; margin: 0 auto; padding: 32px 24px 56px; }
-    h1 { margin: 0 0 12px; font-size: 2rem; }
-    p { line-height: 1.7; }
-    section { margin: 28px 0; }
-    ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; padding: 0; list-style: none; }
-    li { background: #ffffff; border: 1px solid #dbe3ee; border-radius: 8px; padding: 16px; }
-    li strong, li span { display: block; margin-bottom: 8px; }
-    li span { color: #526070; font-size: 0.9rem; }
-    a { color: #0f5b99; margin-right: 12px; }
-  </style>
-</head>
-<body>
-  <header>
-    <main>
-      <h1>Web Application Practice Materials</h1>
-      <p>Java/Spring、Security、Network、DB をつなげて学ぶ公開教材です。Markdown を主ソースにし、HTML / PDF を Marp で生成します。</p>
-    </main>
-  </header>
-  <main>
-    ${chapterHtml}
-  </main>
-</body>
-</html>
-`;
+const lessons = getLessons().map((lesson) => {
+  const routeSlug = routeSlugFor(lesson.relativePath);
+  return {
+    slug: lesson.basename,
+    routeSlug,
+    title: lesson.data.title,
+    chapter: lesson.data.chapter,
+    chapterLabel: chapterLabels[lesson.data.chapter] ?? lesson.data.chapter,
+    order: Number(lesson.data.order),
+    audience: lesson.data.audience,
+    updated: lesson.data.updated,
+    summary: firstParagraph(lesson.content),
+    slideCount: lesson.slideCount,
+    markdownPath: `/lessons/${routeSlug}/`,
+    slidePath: `/slides/${routeSlug}/`,
+    rawPath: `/docs/${routeSlug}.md`,
+    sourcePath: lesson.relativePath,
+  };
+});
 
-fs.writeFileSync(path.join(outDir, "index.html"), html);
-copyDir(path.join(rootDir, "content"), path.join(outDir, "content"));
-console.log(`generated ${path.relative(rootDir, path.join(outDir, "index.html"))}`);
+const groups = [...Map.groupBy(lessons, (lesson) => lesson.chapter).entries()].map(
+  ([key, items]) => ({
+    key,
+    label: chapterLabels[key] ?? key,
+    items,
+  }),
+);
+
+const site = {
+  stats: {
+    lessonCount: lessons.length,
+  },
+  groups,
+  lessons,
+};
+
+fs.writeFileSync(path.join(outDir, "site.json"), JSON.stringify(site, null, 2));
+fs.writeFileSync(
+  path.join(outDir, "routes.json"),
+  JSON.stringify(
+    lessons.flatMap((lesson) => [lesson.markdownPath, lesson.slidePath]),
+    null,
+    2,
+  ),
+);
+fs.rmSync(publicDocsDir, { recursive: true, force: true });
+copyDir(path.join(rootDir, "docs"), publicDocsDir);
+console.log(`generated ${path.relative(rootDir, path.join(outDir, "site.json"))}`);
+console.log(`published Markdown under ${path.relative(rootDir, publicDocsDir)}`);

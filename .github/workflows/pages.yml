@@ -20,25 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: jdx/mise-action@v2
         with:
-          node-version: 22
-          cache: pnpm
-      - id: setup-chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
-          install-dependencies: true
+          cache: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:lessons
       - run: pnpm check:links
       - run: pnpm build:site
-      - run: pnpm build:slides
-      - run: pnpm build:pdf
         env:
-          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-          CHROME_NO_SANDBOX: "true"
+          NUXT_APP_BASE_URL: /awesome/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/site

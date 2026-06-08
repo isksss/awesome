@@ -3,11 +3,12 @@ import path from "node:path";
 import matter from "gray-matter";
 
 export const rootDir = process.cwd();
-export const contentDir = path.join(rootDir, "content");
+export const docsDir = path.join(rootDir, "docs");
 
 export const requiredFields = [
   "marp",
   "title",
+  "size",
   "chapter",
   "order",
   "audience",
@@ -17,7 +18,7 @@ export const requiredFields = [
   "sources",
 ];
 
-export function listMarkdownFiles(dir = contentDir) {
+export function listMarkdownFiles(dir = docsDir) {
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -29,7 +30,11 @@ export function listMarkdownFiles(dir = contentDir) {
       if (entry.isDirectory()) {
         return listMarkdownFiles(fullPath);
       }
-      return entry.isFile() && entry.name.endsWith(".md") ? [fullPath] : [];
+      return entry.isFile() &&
+        entry.name.endsWith(".md") &&
+        !path.relative(rootDir, fullPath).startsWith("docs/process/")
+        ? [fullPath]
+        : [];
     })
     .sort();
 }

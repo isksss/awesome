@@ -1,95 +1,101 @@
 # awesome
 
-Web アプリケーションを作るために必要な実務知識を、初学者から実務者まで読める形で整理する公開教材リポジトリです。
+汎用的な技術資料、学習メモ、運用メモを集約する個人用リポジトリです。
 
-教材は Markdown を主ソースとし、Marp で HTML / PDF に変換します。正式な閲覧口は GitHub Pages、版管理された成果物配布は GitHub Releases を想定します。
+特定のプロダクトや業務システムに依存しない内容を中心に、あとから読み返して使える資料として整理します。すべてのコンテンツは `docs/` 配下に置き、Nuxt サイト上で本文とスライドを動的に表示します。
 
-## 対象読者
+## 資料一覧
 
-- Web アプリケーション開発を体系的に学びたい人
-- Java / Spring、Security、Network、DB を実務レベルでつなげて理解したい人
-- SQL、実行計画、ログ、障害切り分け、運用観点を広く押さえたい人
+### 基礎ツール
 
-## 扱う範囲
+- [Git の使い方](docs/fundamentals/git.md)
+  - リポジトリの考え方、日常操作、ブランチ、マージ、rebase、stash、履歴調査、取り消し、運用ルールを扱います。
+- [Docker の使い方](docs/fundamentals/docker.md)
+  - イメージ、コンテナ、Dockerfile、Compose、ボリューム、ネットワーク、ログ、デバッグ、セキュリティ、運用上の注意を扱います。
+- [Linux コマンド](docs/fundamentals/linux-commands.md)
+  - ファイル操作、検索、権限、プロセス、ネットワーク、ディスク、テキスト処理、シェル、トラブルシュートを扱います。
+- [Vim / Neovim の使い方](docs/fundamentals/vim-nvim.md)
+  - 基本操作、検索、置換、分割、設定、プラグイン、LSP までを 1 本で扱います。
 
-4 章、20 教材で構成します。各教材は 40〜80 スライド程度です。
+### Web アプリケーション教材
+
+`docs/` 配下には、Web アプリケーションを作るために必要な実務知識を Markdown 教材として置いています。
 
 - Web
-  - Spring MVC/API
-  - Spring Validation
-  - 例外処理/ログ
-  - 設定管理
-  - テスト
 - Security
-  - Spring Security
-  - 認証認可設計
-  - セッション/CSRF/CORS
-  - 秘密情報管理
-  - インシデント対応
 - Network
-  - DNS/TLS
-  - Nginx
-  - ロードバランス
-  - HTTP/2/3
-  - 障害切り分け
 - DB
-  - SQL 基礎
-  - MySQL 実行計画
-  - PostgreSQL 実行計画
-  - JPA/MyBatis
-  - トランザクション/ロック/チューニング
 
-代表スタックは Linux + Nginx + Java/Spring + MySQL です。DB は MySQL と PostgreSQL を同じ深さで並列に扱います。
+Git、Docker、Linux コマンドと同じく、個別教材として扱います。Markdown はビルド済み HTML に変換せず、そのまま公開して Nuxt 画面側でレンダリングします。
 
-## 公開しない内容
+## このリポジトリに置くもの
 
-このリポジトリは全世界公開を前提にします。以下は含めません。
+- 汎用的に再利用できる技術資料
+- コマンド、設定、調査手順のメモ
+- 学習時に参照しやすい体系化されたノート
+- 架空構成や安全なサンプルを使った運用知識
+- 公開しても問題ない参考リンク、用語整理、チェックリスト
+
+## このリポジトリに置かないもの
+
+このリポジトリは公開を前提にします。以下は含めません。
 
 - 実システム固有の構成、ログ、インシデント詳細
-- 悪用可能な攻撃再現手順
 - 実在組織の内部情報
 - 認証情報、秘密情報、実環境の設定値
+- 悪用可能な攻撃再現手順
+- 契約、顧客、個人情報に関わる内容
 
 障害調査、ログ分析、チューニング、インシデント対応は、安全なサンプルログと架空構成で説明します。
 
-## 教材ルール
+## 書き方の方針
 
-各教材は以下を持ちます。
+- 事実、既存規約、再現性を優先する
+- コマンドは目的、使いどころ、注意点をセットで書く
+- 危険な操作は、影響範囲と確認方法を明記する
+- 初学者向けの説明と実務向けの判断基準を分ける
+- バージョン依存がある場合は、対象バージョンや確認コマンドを書く
+- 外部リンクは参考として扱い、本文だけでも要点が分かるようにする
 
-- YAML frontmatter
-- 「まず読む」「実務で使う」「専門的に理解する」の段階構成
-- 更新日
-- 重要・危険・バージョン依存の記述に対する本文近くの出典
-- 末尾の参考資料
-- 図を追加する場合は Mermaid を使う
+## ディレクトリ構成
 
-試験名、資格体系、試験範囲には触れません。
+```text
+.
+├── README.md
+├── docs/
+│   ├── fundamentals/
+│   ├── db/
+│   ├── network/
+│   ├── security/
+│   └── web/
+├── app/
+├── scripts/
+└── mise.toml
+```
 
 ## 開発
 
 ```sh
-corepack enable
+mise install
 pnpm install
 pnpm build
 ```
 
-PDF 生成には Chrome、Edge、Firefox のいずれかが必要です。CI では Chrome をセットアップしてから `pnpm build:pdf` を実行します。
+Node と pnpm は mise で管理します。バージョンは `mise.toml` を参照します。
 
 主なコマンド:
 
-- `pnpm generate:lessons`: 初期教材 Markdown を生成
 - `pnpm check:lessons`: frontmatter とスライド数を検証
 - `pnpm check:links`: 内部リンクを検証
-- `pnpm build:site`: GitHub Pages 用の一覧ページを生成
-- `pnpm build:slides`: Marp で HTML を生成
-- `pnpm build:pdf`: Marp で PDF を生成
-- `pnpm build`: 検証、Pages、HTML、PDF 生成を実行
+- `pnpm build:data`: Nuxt 用の教材データを生成
+- `pnpm build:site`: Nuxt の静的サイトを生成
+- `pnpm build`: 検証、Markdown 公開コピー、Nuxt 静的サイト生成を実行
 
 ## 更新方針
 
-半年ごとに、主要出典、Spring、MySQL、PostgreSQL、Nginx、TLS/HTTP、バージョン依存箇所を見直します。
-
-外部リンクは通常 CI の必須条件にはせず、定期 CI で警告扱いにします。
+- Git、Docker、Linux コマンド資料は、普段の作業で見つけた不足を随時追記する
+- Web アプリケーション教材は、半年ごとに主要出典、Spring、MySQL、PostgreSQL、Nginx、TLS/HTTP、バージョン依存箇所を見直す
+- 外部リンクは通常 CI の必須条件にはせず、定期 CI で警告扱いにする
 
 ## ライセンス
 

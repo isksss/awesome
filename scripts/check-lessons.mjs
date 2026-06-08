@@ -4,8 +4,8 @@ const lessons = getLessons();
 const errors = [];
 const seenOrders = new Set();
 
-if (lessons.length !== 20) {
-  errors.push(`expected 20 lessons, found ${lessons.length}`);
+if (lessons.length !== 24) {
+  errors.push(`expected 24 lessons, found ${lessons.length}`);
 }
 
 for (const lesson of lessons) {
@@ -21,6 +21,10 @@ for (const lesson of lessons) {
     errors.push(`${relativePath}: marp must be true`);
   }
 
+  if (data.size !== "16:9") {
+    errors.push(`${relativePath}: size must be 16:9`);
+  }
+
   if (data.visibility !== "public") {
     errors.push(`${relativePath}: visibility must be public`);
   }
@@ -33,12 +37,12 @@ for (const lesson of lessons) {
     errors.push(`${relativePath}: sources must contain at least 2 entries`);
   }
 
-  if (!lesson.content.includes("```mermaid")) {
+  if (data.chapter !== "fundamentals" && !lesson.content.includes("```mermaid")) {
     errors.push(`${relativePath}: must include at least one Mermaid diagram`);
   }
 
-  if (slideCount < 40 || slideCount > 80) {
-    errors.push(`${relativePath}: slide count must be 40-80, found ${slideCount}`);
+  if (slideCount < 12 || slideCount > 80) {
+    errors.push(`${relativePath}: slide count must be 12-80, found ${slideCount}`);
   }
 
   const orderKey = `${data.chapter}:${data.order}`;

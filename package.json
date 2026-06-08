@@ -5,16 +5,16 @@
   "packageManager": "pnpm@10.12.4",
   "type": "module",
   "scripts": {
-    "generate:lessons": "node scripts/generate-lessons.mjs",
     "check:lessons": "node scripts/check-lessons.mjs",
     "check:links": "node scripts/check-internal-links.mjs",
-    "build:site": "node scripts/build-site.mjs",
-    "build:slides": "marp -I content --theme-set themes/learning.css --theme learning --html --allow-local-files --output dist/site/slides",
-    "build:pdf": "marp -I content --theme-set themes/learning.css --theme learning --pdf --allow-local-files --parallel 1 --browser-protocol webdriver-bidi --output dist/site/pdf",
-    "build": "pnpm check:lessons && pnpm check:links && pnpm build:site && pnpm build:slides && pnpm build:pdf"
+    "build:data": "node scripts/build-site.mjs",
+    "build:site": "pnpm build:data && nuxt generate",
+    "build": "pnpm check:lessons && pnpm check:links && pnpm build:site"
   },
   "devDependencies": {
-    "@marp-team/marp-cli": "4.2.3",
-    "gray-matter": "4.0.3"
+    "@nuxt/ui": "^4.8.2",
+    "gray-matter": "4.0.3",
+    "markdown-it": "^14.2.0",
+    "nuxt": "^4.4.7"
   }
 }
