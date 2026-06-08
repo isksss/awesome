@@ -21,45 +21,59 @@ sources:
 アプリと実行環境をまとめて扱い、開発と検証を再現しやすくする。
 
 - 本文資料: `docs/fundamentals/docker.md`
-- image、container、volume、network を分けて見る
-- 削除と公開ポートは慎重に扱う
+- 対象: Docker + Compose + Node/PostgreSQL
+- まず全体像、次に実務の判断、最後に確認手順を押さえる
+- 各章では、現場で起こりやすい状況と小さなサンプルを一緒に見る
 
 ---
 
-## Docker で何が楽になるか
-
-- ランタイムのバージョンを揃えやすい
-- DB や Nginx をすぐ起動できる
-- ローカル環境を汚しにくい
-- CI と近い環境を作りやすい
-
-ただし、データとポートは外につながる。そこは丁寧に確認する。
-
----
-
-## image と container
+## 全体像
 
 ```mermaid
 flowchart LR
   File[Dockerfile] --> Image[イメージ]
   Image --> Run[起動]
   Run --> Container[コンテナ]
+  Container --> Logs[ログ確認]
 ```
 
-```text
+この図を入口に、どこで何を判断するかを追っていく。
+
+> 実務例: Docker の使い方の相談を受けたら、まず図のどの場所で問題が起きているかを言葉にする。
+
+---
+
+## 何が楽になるか
+
+- ランタイム、DB、Nginx などを同じ手順で起動できる。
+- ローカル、CI、検証環境の差を小さくできる。
+- ただし volume と port は外側に影響するので丁寧に扱う。
+
+> 実務例: 何が楽になるかでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
+---
+
+## image と container
+
+- image は実行環境の雛形。
+- container は image から起動したプロセス。
+- Dockerfile は image の作り方。
+
+> 実務例: image と containerでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
+```
 Dockerfile -> image -> container
  設計図        雛形       実際に動くプロセス
 ```
 
-- image: 実行環境を固めたもの
-- container: image から起動した実体
-- Dockerfile: image の作り方
-
-まずこの 3 つを分けると Docker は見通しやすい。
-
 ---
 
-## まず見るコマンド
+## 状態を見る
+
+- 詰まったらまず状態を見る。
+- 起動中 container、手元の image、Docker 自体の情報を確認する。
+
+> 実務例: 状態を見るでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
 docker version
@@ -68,254 +82,80 @@ docker ps
 docker images
 ```
 
-- Docker が動いているか
-- どの container が起動中か
-- どの image が手元にあるか
-
-詰まったら、まず状態を見る。
-
 ---
 
-## container を起動する
+## run の基本
+
+- 名前、port、image を指定して起動する。
+- host 側と container 側の port の向きを間違えない。
+
+> 実務例: run の基本では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
 docker run --name web -p 8080:80 nginx:1.27
 ```
 
-意味:
-
-```text
-host:8080 -> container:80
-```
-
-ブラウザで `http://localhost:8080` を開くと nginx に届く。
-
 ---
 
-## よく使う run オプション
+## ログと中身
+
+- ログで起動エラーを見る。
+- exec は原因確認用。container 内の手修正は再作成で消える。
+
+> 実務例: ログと中身では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
-docker run --rm -d \
-  --name app \
-  -p 8080:8080 \
-  -e APP_ENV=local \
-  my-app:local
-```
-
-- `--rm`: 終了後に削除
-- `-d`: バックグラウンド
-- `-p`: ポート公開
-- `-e`: 環境変数
-
----
-
-## ログと中身を見る
-
-```sh
-docker logs -f web
+docker logs web
+docker logs -f --tail=100 web
 docker exec -it web sh
-docker inspect web
 ```
-
-- logs: 標準出力と標準エラーを見る
-- exec: 起動中 container の中でコマンドを実行
-- inspect: 設定や mount、network を確認
 
 ---
 
-## Dockerfile の基本
+## Dockerfile の順番
 
-```Dockerfile
-FROM node:22-bookworm-slim
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-CMD ["npm", "start"]
-```
+- 依存関係を先に入れ、アプリ本体をあとでコピーする。
+- layer cache が効きやすくなる。
 
-- `RUN`: build 時
-- `CMD`: 起動時
-- 変更頻度が低いものを先に書くと cache が効きやすい
-
----
-
-## .dockerignore
-
-```dockerignore
-.git
-node_modules
-dist
-.env
-*.log
-```
-
-不要なファイルを build context に入れない。
-
-`.env` やログを image build に渡さないためにも大事。
-
----
-
-## Compose でまとめる
-
-```yaml
-services:
-  web:
-    image: nginx:1.27
-    ports:
-      - "8080:80"
-  db:
-    image: postgres:17
-```
-
-複数の container をまとめて起動できる。
-
----
-
-## Compose の日常操作
-
-```sh
-docker compose up -d
-docker compose ps
-docker compose logs -f
-docker compose down
-```
-
-- 起動
-- 状態確認
-- ログ確認
-- 停止と削除
-
-`down -v` は volume も消すので慎重に使う。
-
----
-
-## volume はデータ置き場
-
-```sh
-docker volume ls
-docker volume inspect db-data
-docker volume rm db-data
-```
-
-- DB データなどを container の外に残す
-- container を消しても volume は残る
-- volume を消すとデータが消える
-
----
-
-## network は通信のまとまり
-
-```sh
-docker network ls
-docker network inspect app-net
-```
-
-同じ user-defined network の container は、名前で通信できる。
-
-```text
-postgres://user:pass@db:5432/app
-```
-
-別 container の DB に `localhost` でつなごうとしない。
-
----
-
-## よくあるトラブル
-
-- port がすでに使われている
-- volume の権限が合わない
-- `.dockerignore` で必要ファイルを除外している
-- `localhost` の意味を取り違えている
-- secret を image に入れてしまう
-
-まず `ps`、`logs`、`inspect` を見る。
-
----
-
-## Dockerfile を読みやすくする
+> 実務例: Dockerfile の順番では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```Dockerfile
 FROM node:24-bookworm-slim
-
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
-
 COPY . .
 RUN pnpm build
-
 CMD ["pnpm", "start"]
 ```
-
-基本の順番:
-
-- base image を選ぶ
-- 作業ディレクトリを決める
-- 依存関係を先に入れる
-- アプリ本体をコピーする
-- 起動コマンドを書く
-
-依存関係の layer を分けると、ソース変更時の build が速くなりやすい。
 
 ---
 
 ## multi-stage build
 
+- build 用の依存を最終 image に入れない。
+- image を小さくし、実行時に不要なツールを減らす。
+
+> 実務例: multi-stage buildでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
 ```Dockerfile
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm build
+RUN corepack enable && pnpm install --frozen-lockfile && pnpm build
 
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist/site /usr/share/nginx/html
 ```
 
-build 用の依存を最終 image に入れない。
-
-よい点:
-
-- image が小さくなる
-- 実行時に不要なツールを減らせる
-- 攻撃面を小さくしやすい
-
 ---
 
-## image tag の考え方
+## .dockerignore
 
-```sh
-docker pull nginx:1.27-alpine
-docker pull nginx:latest
-```
+- build context を小さくし、秘密情報を送らない。
+- node_modules や .git は基本的に除外する。
 
-`latest` は「最新版保証」ではなく、単なる tag 名。
-
-実務ではこうする:
-
-- 検証環境では固定 tag を使う
-- 本番では digest 固定も検討する
-- tag を変えたら動作確認する
-
-digest 例:
-
-```text
-nginx@sha256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
----
-
-## build context を小さくする
-
-```sh
-docker build -t sample-app .
-```
-
-最後の `.` が build context。ここにあるファイルが Docker daemon に送られる。
-
-`.dockerignore` 例:
+> 実務例: .dockerignoreでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```dockerignore
 node_modules/
@@ -325,42 +165,70 @@ dist/
 tmp/
 ```
 
-context が大きいと build が遅くなり、秘密情報を送る危険も増える。
-
 ---
 
-## container の状態を見る
+## Compose でまとめる
 
-```sh
-docker inspect web
-docker inspect --format '{{.State.Status}}' web
-docker inspect --format '{{json .NetworkSettings.Networks}}' web
-```
+- アプリ、DB、Nginx など複数 container をまとめて扱う。
+- service 名で通信できる。
 
-`inspect` は JSON で詳細を見られる。
-
-見る場面:
-
-- どの network にいるか
-- volume がどこに mount されているか
-- 環境変数が入っているか
-- healthcheck の状態
-
----
-
-## healthcheck を付ける
-
-```Dockerfile
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD curl -fsS http://localhost:3000/health || exit 1
-```
-
-Compose 例:
+> 実務例: Compose でまとめるでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```yaml
 services:
   app:
-    image: sample-app
+    build: .
+    ports:
+      - "8080:3000"
+  db:
+    image: postgres:17
+    volumes:
+      - db-data:/var/lib/postgresql/data
+volumes:
+  db-data:
+```
+
+---
+
+## volume
+
+- DB データなどを container の外に残す。
+- container を消しても volume は残る。
+- `down -v` はデータも消す。
+
+> 実務例: volumeでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
+```sh
+docker volume ls
+docker volume inspect db-data
+docker compose down -v
+```
+
+---
+
+## network
+
+- 同じ user-defined network の container は service 名で通信できる。
+- 別 container の DB へ `localhost` ではつながらない。
+
+> 実務例: networkでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
+```
+postgres://app:app-password@db:5432/app
+```
+
+---
+
+## healthcheck
+
+- 起動したことと使えることは別。
+- healthcheck で依存関係や監視の判断材料を作る。
+
+> 実務例: healthcheckでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
+```yaml
+services:
+  app:
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
       interval: 30s
@@ -368,179 +236,46 @@ services:
       retries: 3
 ```
 
-「起動した」と「使える」は別。healthcheck で区別する。
-
 ---
 
-## 環境変数の渡し方
+## secret と環境変数
 
-```sh
-docker run --env APP_ENV=local --env PORT=3000 sample-app
-```
+- secret を image に焼き込まない。
+- .env を commit しない。
+- ログに secret を出さない。
 
-Compose:
+> 実務例: secret と環境変数では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```yaml
 services:
   app:
-    image: sample-app
     environment:
       APP_ENV: local
       PORT: "3000"
 ```
 
-注意:
-
-- secret を image に焼き込まない
-- `.env` を commit しない
-- ログに secret を出さない
-
 ---
 
-## DB を Compose で動かす
+## 掃除と危険操作
 
-```yaml
-services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: app
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: app-password
-    ports:
-      - "5432:5432"
-    volumes:
-      - db-data:/var/lib/postgresql/data
+- 未使用 resource は増える。
+- prune は便利だが volume 削除に注意する。
 
-volumes:
-  db-data:
-```
-
-接続文字列:
-
-```text
-postgres://app:app-password@localhost:5432/app
-```
-
-別 container からつなぐ場合は host が `db` になる。
-
----
-
-## Compose の依存関係
-
-```yaml
-services:
-  app:
-    build: .
-    depends_on:
-      db:
-        condition: service_healthy
-  db:
-    image: postgres:17
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app"]
-```
-
-`depends_on` は起動順を助けるが、アプリが DB 接続リトライを持つ方が強い。
-
-アプリ側でも、起動直後の DB 未準備に備える。
-
----
-
-## ログを見るコツ
+> 実務例: 掃除と危険操作では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
-docker compose logs app
-docker compose logs -f --tail=100 app
-docker logs --since=10m web
-```
-
-見るポイント:
-
-- 起動直後のエラー
-- 環境変数や設定ファイルの読み込み
-- port の待受
-- DB や外部APIへの接続
-
-ログが多いときは service 名と時刻で絞る。
-
----
-
-## exec で中に入る
-
-```sh
-docker exec -it web sh
-docker compose exec app sh
-```
-
-中で見るもの:
-
-```sh
-pwd
-ls -la
-env | sort
-ps aux
-```
-
-container 内で修正しても、基本的には再作成で消える。原因確認用と考える。
-
----
-
-## resource を確認する
-
-```sh
-docker stats
 docker system df
 docker system prune
+docker system prune -a --volumes
 ```
-
-- `stats`: CPU、メモリ、ネットワーク
-- `system df`: image、container、volume の使用量
-- `prune`: 未使用リソースの掃除
-
-`docker system prune -a --volumes` は影響が大きい。消す対象を確認してから使う。
 
 ---
 
-## root で動かさない
+## トラブルの見方
 
-```Dockerfile
-RUN useradd -r -u 10001 appuser
-USER appuser
-```
+- container が起動しているか、ログ、port、アプリ応答の順に見る。
 
-container 内 root は、設定や mount 次第でリスクになる。
-
-見るポイント:
-
-- 書き込みが必要なディレクトリの権限
-- 低い port を使っていないか
-- volume mount 先の owner
-
----
-
-## 本番に近づけるチェック
-
-```text
-固定tagを使っている
-secretをimageに入れていない
-healthcheckがある
-ログが標準出力に出る
-volume削除手順を理解している
-不要なportを公開していない
-```
-
-Docker はローカルで便利なだけでなく、運用の前提も見える道具。
-
----
-
-## トラブルシュート例
-
-```text
-症状: localhost:8080 にアクセスできない
-```
-
-見る順番:
+> 実務例: トラブルの見方では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
 docker compose ps
@@ -549,21 +284,65 @@ docker port app
 curl -v http://localhost:8080
 ```
 
-よくある原因:
+---
 
-- container が落ちている
-- container 内のアプリが別 port で待っている
-- host 側の port が衝突している
-- firewall や proxy が邪魔している
+## 実務で使う場面
+
+- アプリ、DB、Nginxなどを同じ手順で起動し、開発環境を再現する場面で使う。
+- CIや検証環境で、依存関係と実行手順を揃えるために使う。
+
+- この教材では **Docker の使い方** を Docker + Compose + Node/PostgreSQL の文脈で扱う。
+
+---
+
+## 判断の順番
+
+- imageとcontainerを分けて考える。
+- port、volume、networkを起動前に確認する。
+- ログとhealthcheckで使える状態か見る。
+
+---
+
+## サンプル確認
+
+手元では、小さく動かして結果を見るところから始める。
+
+```sh
+docker compose ps
+docker compose logs -f app
+docker compose exec app sh
+curl -v http://localhost:8080
+```
+
+---
+
+## よくある失敗
+
+- container内のlocalhostをhostと混同する
+- secretをimageやDockerfileに入れる
+- `down -v` でvolumeを消してしまう
+
+---
+
+## チェックリスト
+
+- `docker compose ps` で状態を見る
+- `docker compose logs` で起動失敗を見る
+- DBデータを消す操作か確認する
+
+---
+
+## ミニ演習
+
+- Nginxをport公開して起動する
+- Composeでappとdbをつなぐ
+- healthcheckが失敗する設定を直す
 
 ---
 
 ## まとめ
 
-- image と container を分けて考える
-- logs と exec で中を見る
-- Compose は複数 container の操作に便利
-- volume 削除と port 公開は慎重に確認する
-- 本番では secret、tag、healthcheck、ログを必ず見る
-
-Docker は状態を見ながら使うと怖くない。
+- 目的と境界を先に決める
+- 状態を確認してから変更する
+- 具体例で動かし、ログや結果で確かめる
+- 危険な操作は影響範囲を確認する

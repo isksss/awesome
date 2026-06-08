@@ -21,12 +21,34 @@ sources:
 開発、調査、運用で必要な「見る・探す・直す」を安全に進める。
 
 - 本文資料: `docs/fundamentals/linux-commands.md`
-- まずは見るコマンドに慣れる
-- 削除、権限変更、root 操作は慎重に扱う
+- 対象: Linux shell + logs + network tools
+- まず全体像、次に実務の判断、最後に確認手順を押さえる
+- 各章では、現場で起こりやすい状況と小さなサンプルを一緒に見る
 
 ---
 
-## 最初に見るもの
+## 全体像
+
+```mermaid
+flowchart LR
+  Where[場所確認] --> Read[読む]
+  Read --> Search[探す]
+  Search --> Decide[判断]
+  Decide --> Change[直す]
+```
+
+この図を入口に、どこで何を判断するかを追っていく。
+
+> 実務例: Linux コマンドの相談を受けたら、まず図のどの場所で問題が起きているかを言葉にする。
+
+---
+
+## 最初に見る
+
+- どこで、誰として、どの環境を触っているかを見る。
+- 本番や共有環境ではこの確認が事故を減らす。
+
+> 実務例: 最初に見るでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
 pwd
@@ -36,28 +58,14 @@ date
 uname -a
 ```
 
-- どこで作業しているか
-- 誰として実行しているか
-- どの環境を見ているか
-
-本番や共有環境では、この確認だけで事故を減らせる。
-
----
-
-## 調査の流れ
-
-```mermaid
-flowchart LR
-  Where[場所確認] --> Read[読む]
-  Read --> Search[探す]
-  Search --> Change[直す]
-```
-
-いきなり変更せず、まず現在地と状態を見る。これだけで作業はかなり落ち着く。
-
 ---
 
 ## help を読む
+
+- 知らない option は手元で確認する。
+- 手順書では alias より正式コマンドを書く。
+
+> 実務例: help を読むでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
 man ls
@@ -66,363 +74,109 @@ type ls
 command -v ls
 ```
 
-- `man`: 詳しい説明
-- `--help`: すぐ見られる使い方
-- `type`: alias や builtin も分かる
-
-手順書では alias より正式コマンドを書く。
-
 ---
 
 ## ファイルを見る
 
+- まず変更しないで見る。
+- ログは less と tail を使えるだけでかなり読みやすい。
+
+> 実務例: ファイルを見るでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
 ```sh
 ls -la
-cat file.txt
-less file.txt
-head -n 20 file.txt
+less app.log
+head -n 20 app.log
 tail -n 100 app.log
+tail -f app.log
 ```
-
-まずは「変更しないで見る」操作に慣れる。
-
-ログは `less` と `tail` を使えるだけでかなり読みやすくなる。
 
 ---
 
-## ファイルを探す
+## 探す
+
+- ファイル名で探すときは find。
+- 文字列で探すときは grep または rg。
+
+> 実務例: 探すでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
-find . -type f -name "*.log"
-find . -type f -mtime -1
+find . -name "*.log"
 find . -type f -size +100M
+grep -R --line-number "ERROR" .
+rg "DATABASE_URL" .
 ```
-
-- 名前で探す
-- 更新日時で探す
-- サイズで探す
-
-削除と組み合わせる前に、必ず表示だけで確認する。
-
----
-
-## 文字列を探す
-
-```sh
-grep -n "ERROR" app.log
-grep -n -C 3 "request-id-123" app.log
-rg "TODO"
-```
-
-- `-n`: 行番号
-- `-C`: 前後の行
-- `rg`: 使える環境なら高速で便利
-
-ログ調査では、時刻、request id、エラー分類で絞る。
-
----
-
-## コピー、移動、削除
-
-```sh
-cp source.txt dest.txt
-mv old.txt new.txt
-rm file.txt
-rm -ri dir
-```
-
-削除は戻せないことが多い。
-
-`rm -rf` の前には、`pwd`、`ls -la`、対象パスを確認する。
-
----
-
-## 権限を見る
-
-```sh
-ls -l
-id
-namei -l /path/to/file
-```
-
-- ファイルの権限
-- 自分の uid/gid
-- パス途中のディレクトリ権限
-
-ファイル自体が正しくても、途中のディレクトリで止まることがある。
-
----
-
-## 権限を変える
-
-```sh
-chmod 644 memo.txt
-chmod +x script.sh
-chown user:group file.txt
-```
-
-- `chmod`: 権限を変える
-- `chown`: 所有者を変える
-- `-R`: 再帰変更。影響範囲が広い
-
-`chmod -R` と `chown -R` は対象を必ず確認する。
-
----
-
-## プロセスを見る
-
-```sh
-ps aux
-pgrep -af nginx
-top
-kill -TERM <pid>
-```
-
-- 何が動いているか
-- どの pid か
-- CPU やメモリを使っているか
-- 終了依頼を出せるか
-
-まず `TERM`。いきなり `KILL` にしない。
-
----
-
-## systemd とログ
-
-```sh
-systemctl status nginx
-journalctl -u nginx -f
-journalctl -u nginx --since "1 hour ago"
-```
-
-- サービス状態
-- 直近ログ
-- 時刻指定の調査
-
-障害調査では、時刻とサービス名をそろえて見る。
-
----
-
-## ディスクを見る
-
-```sh
-df -h
-df -i
-du -sh * | sort -h
-find . -type f -size +100M
-```
-
-- 容量不足
-- inode 不足
-- 大きいディレクトリ
-- 大きいファイル
-
-いきなり消さず、まず何が大きいかを調べる。
-
----
-
-## ネットワークを見る
-
-```sh
-ip addr
-ip route
-getent hosts example.com
-curl -v https://example.com
-ss -ltnp
-```
-
-- IP アドレス
-- 経路
-- 名前解決
-- HTTP/TLS
-- 待受ポート
-
-上から順に見ると、原因を絞りやすい。
-
----
-
-## shell script の基本
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-target="${1:-}"
-if [ -z "$target" ]; then
-  echo "usage: $0 <target>" >&2
-  exit 1
-fi
-```
-
-小さな確認処理から script にすると、作業が再現しやすくなる。
-
----
-
-## 危険な操作
-
-```sh
-rm -rf
-chmod -R
-chown -R
-dd
-mkfs
-rsync --delete
-sudo
-```
-
-実行前に `pwd`、`whoami`、`echo "$TARGET"`、`ls -la "$TARGET"` を見る。
 
 ---
 
 ## パイプでつなぐ
 
+- 読む、絞る、整形する、数える、並べる。
+- 一度に完璧に書かず、少しずつつなぐ。
+
+> 実務例: パイプでつなぐでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
 ```sh
-cat access.log | grep " 500 " | head
 grep " 500 " access.log | awk '{print $1}' | sort | uniq -c | sort -nr
 ```
 
-パイプ `|` は、左の結果を右に渡す。
-
-よくある流れ:
-
-```text
-読む -> 絞る -> 整形する -> 数える -> 並べる
-```
-
-`cat file | grep` は分かりやすいが、慣れたら `grep pattern file` でよい。
-
 ---
 
-## grep の実務例
+## sed と awk
+
+- sed は置換や行の抽出。
+- awk は列の処理や集計。
+
+> 実務例: sed と awkでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
-grep -R "DATABASE_URL" .
-grep -R --line-number --exclude-dir=node_modules "TODO" .
-grep -E "ERROR|WARN" app.log
-```
-
-見るポイント:
-
-- `-R`: 再帰的に探す
-- `--line-number`: 行番号を出す
-- `--exclude-dir`: 探さないディレクトリ
-- `-E`: 正規表現を使う
-
-ログ調査では、まず時刻や request id で絞る。
-
----
-
-## sed で置換する
-
-```sh
-sed 's/old/new/' file.txt
-sed 's/old/new/g' file.txt
 sed -n '10,20p' file.txt
-```
-
-ファイルを書き換える前に、標準出力で結果を見る。
-
-macOS と GNU sed では `-i` の扱いが違う。
-
-```sh
-sed -i.bak 's/old/new/g' file.txt
-```
-
-バックアップを作ると戻しやすい。
-
----
-
-## awk で列を扱う
-
-```sh
-awk '{print $1, $2}' access.log
+sed 's/old/new/g' file.txt
 awk '$9 >= 500 {print $0}' access.log
-awk '{count[$1]++} END {for (ip in count) print count[ip], ip}' access.log
-```
-
-awk は「列を取り出す」「条件で絞る」「集計する」が得意。
-
-例: status code の数を数える。
-
-```sh
 awk '{count[$9]++} END {for (code in count) print code, count[code]}' access.log
 ```
 
 ---
 
-## xargs でまとめて実行
+## コピーと削除
+
+- 削除前に対象を表示する。
+- recursive な操作は現在地と対象パスを確認する。
+
+> 実務例: コピーと削除では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
-find . -name "*.log" -print0 | xargs -0 wc -l
-find . -name "*.tmp" -print0 | xargs -0 rm
-```
-
-空白を含むファイル名に備えて、`-print0` と `-0` をセットで使う。
-
-削除前は `rm` の代わりに `echo` で確認する。
-
-```sh
-find . -name "*.tmp" -print0 | xargs -0 echo rm
+cp source.txt backup.txt
+mv old.txt new.txt
+rm old.txt
+find . -name "*.tmp" -print
 ```
 
 ---
 
-## tar と zip
+## 権限
+
+- ユーザー、グループ、mode を分けて見る。
+- ファイルだけでなく途中ディレクトリの権限も見る。
+
+> 実務例: 権限では、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
-tar -czf logs.tar.gz logs/
-tar -tzf logs.tar.gz | head
-tar -xzf logs.tar.gz
-zip -r logs.zip logs/
-unzip -l logs.zip
+id
+ls -l app.log
+ls -ld /var/log
+namei -l /var/log/app/app.log
+chmod 640 app.log
 ```
-
-- `tar -c`: 作る
-- `tar -t`: 中身を見る
-- `tar -x`: 展開する
-- `z`: gzip
-
-展開前に中身を見ると、想定外の場所に展開する事故を減らせる。
 
 ---
 
-## rsync で同期する
+## プロセス
 
-```sh
-rsync -av --dry-run src/ dest/
-rsync -av src/ dest/
-rsync -av --delete src/ dest/
-```
+- CPU、メモリ、PID、待受 port を見る。
+- `kill -9` は最後の手段。
 
-`--dry-run` で先に確認する。
-
-注意:
-
-- `src/` と `src` は意味が違う
-- `--delete` は転送先の余計なファイルを消す
-- 本番では対象パスを必ず確認する
-
----
-
-## journalctl の見方
-
-```sh
-journalctl -u nginx
-journalctl -u nginx --since "10 minutes ago"
-journalctl -u nginx -f
-journalctl -p err..alert
-```
-
-- service 単位で見る
-- 時刻で絞る
-- follow する
-- severity で絞る
-
-障害調査では、発生時刻を先に決めるとログが読みやすい。
-
----
-
-## プロセスを深く見る
+> 実務例: プロセスでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
 ps aux --sort=-%mem | head
@@ -431,144 +185,101 @@ pgrep -af nginx
 lsof -p <pid>
 ```
 
-見るもの:
-
-- CPU を使っているプロセス
-- メモリを使っているプロセス
-- 開いているファイル
-- 待受 port
-
-`kill -9` は最後の手段。まず通常の停止方法を探す。
-
 ---
 
-## port と接続を見る
+## systemd とログ
+
+- service の状態と journal を見る。
+- 時刻で絞ると調査が速い。
+
+> 実務例: systemd とログでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
-ss -ltnp
-ss -tunap
-curl -I http://localhost:8080
-curl -vk https://example.com
+systemctl status nginx
+journalctl -u nginx --since "10 minutes ago"
+journalctl -u nginx -f
+journalctl -p err..alert
 ```
-
-- `LISTEN`: 待受
-- `ESTABLISHED`: 接続中
-- `-p`: プロセス情報
-- `curl -v`: 通信の詳細
-
-「アプリが起動している」と「port が開いている」は別なので、両方見る。
 
 ---
 
-## DNS を確認する
+## ディスク
 
-```sh
-getent hosts example.com
-dig example.com
-dig +short example.com
-cat /etc/resolv.conf
-```
+- 容量不足と inode 不足は別。
+- 大きいものを調べてから消す。
 
-DNS が怪しいときの順番:
-
-- 名前が引けるか
-- どの IP に解決されるか
-- resolver 設定は何か
-- TTL や CNAME はどうなっているか
-
-コンテナ内とホストでは DNS 設定が違うことがある。
-
----
-
-## 権限トラブルの例
-
-```text
-症状: app.log に書き込めない
-```
-
-見る順番:
-
-```sh
-whoami
-id
-ls -ld .
-ls -l app.log
-namei -l app.log
-```
-
-ファイルだけでなく、途中のディレクトリに実行権限があるかも見る。
-
----
-
-## 容量不足の例
+> 実務例: ディスクでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```sh
 df -h
+df -i
 du -sh /var/log/* | sort -h
 find /var/log -type f -size +100M -print
-```
-
-対応の考え方:
-
-- 何が大きいか調べる
-- 消してよいものか確認する
-- service が掴んでいる deleted file も見る
-
-```sh
 lsof | grep deleted
 ```
 
-ログを消す前に、ローテーション設定も確認する。
+---
+
+## ネットワーク
+
+- IP、経路、名前解決、HTTP、待受 port の順に見る。
+
+> 実務例: ネットワークでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
+```sh
+ip addr
+ip route
+getent hosts example.com
+curl -vk https://example.com
+ss -ltnp
+```
 
 ---
 
-## 安全なシェルスクリプト
+## rsync と archive
+
+- 同期や圧縮は事前確認が大事。
+- `--delete` は転送先を消す可能性がある。
+
+> 実務例: rsync と archiveでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
+```sh
+rsync -av --dry-run src/ dest/
+rsync -av src/ dest/
+tar -czf logs.tar.gz logs/
+tar -tzf logs.tar.gz | head
+```
+
+---
+
+## 安全な script
+
+- 未定義変数や失敗を見逃さない。
+- 引数を検証し、対象を表示する。
+
+> 実務例: 安全な scriptでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-
-readonly target="${1:-}"
+target="${1:-}"
 if [[ -z "$target" ]]; then
   echo "usage: $0 <target>" >&2
   exit 1
 fi
-
 echo "target=$target"
 ```
 
-ポイント:
-
-- 未定義変数で落とす
-- 失敗したコマンドで止める
-- 引数を先に検証する
-- 実行対象を表示する
-
 ---
 
-## コマンド履歴を活用する
+## 調査メモ
 
-```sh
-history
-history | grep docker
-Ctrl-r
+- 時刻、対象、実行ユーザー、症状、見たコマンド、判断を残す。
+- コマンドだけでなく、結果から何を考えたかを書く。
+
+> 実務例: 調査メモでは、レビュー前の確認や障害調査で「今どんな状態か」を説明するために使う。
+
 ```
-
-履歴は便利だが、危険なコマンドをそのまま再実行しない。
-
-確認:
-
-```sh
-pwd
-whoami
-echo "$TARGET"
-```
-
----
-
-## トラブル時のメモの型
-
-```text
 時刻:
 対象ホスト:
 実行ユーザー:
@@ -578,18 +289,65 @@ echo "$TARGET"
 次に見ること:
 ```
 
-調査ログを残すと、あとから説明しやすい。
+---
 
-コマンドだけでなく、結果から何を判断したかも書く。
+## 実務で使う場面
+
+- ログ調査、容量不足、プロセス確認、ネットワーク切り分けを行う場面で使う。
+- 本番や共有環境では、変更より先に観察する習慣が事故を減らす。
+
+- この教材では **Linux コマンド** を Linux shell + logs + network tools の文脈で扱う。
+
+---
+
+## 判断の順番
+
+- 現在地、ユーザー、対象ホストを確認する。
+- 読む、探す、絞る、判断するの順に進める。
+- 削除や変更の前に対象を表示する。
+
+---
+
+## サンプル確認
+
+手元では、小さく動かして結果を見るところから始める。
+
+```sh
+pwd && whoami && hostname
+tail -n 100 app.log
+rg "ERROR" logs/
+df -h
+```
+
+---
+
+## よくある失敗
+
+- 本番ホストであることに気づかず操作する
+- 巨大ログを無条件に開く
+- 対象確認なしにrecursive削除する
+
+---
+
+## チェックリスト
+
+- `pwd` `whoami` `hostname` を見る
+- ログは時刻と条件で絞る
+- 削除前に `find ... -print` で対象を見る
+
+---
+
+## ミニ演習
+
+- access logをstatus code別に集計する
+- 大きいファイルを探して容量を見積もる
+- systemd serviceのログを時刻で絞る
 
 ---
 
 ## まとめ
 
-- 最初は「見る」コマンドを覚える
-- 削除や権限変更は確認を増やす
-- ログ調査は時刻と request id をそろえる
-- 容量、プロセス、ネットワークは順番に見る
-- 危険な操作は急がない
-
-Linux コマンドは、安全に見る力が付くほど強く使える。
+- 目的と境界を先に決める
+- 状態を確認してから変更する
+- 具体例で動かし、ログや結果で確かめる
+- 危険な操作は影響範囲を確認する

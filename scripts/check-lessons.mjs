@@ -4,8 +4,8 @@ const lessons = getLessons();
 const errors = [];
 const seenOrders = new Set();
 
-if (lessons.length !== 24) {
-  errors.push(`expected 24 lessons, found ${lessons.length}`);
+if (lessons.length < 26) {
+  errors.push(`expected at least 26 lessons, found ${lessons.length}`);
 }
 
 for (const lesson of lessons) {
