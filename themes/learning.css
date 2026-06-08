@@ -1,0 +1,157 @@
+/*
+@theme learning
+*/
+
+@import "default";
+
+:root {
+  --color-background: #fbfcfe;
+  --color-surface: #ffffff;
+  --color-text: #172033;
+  --color-muted: #5b667a;
+  --color-accent: #0f6b74;
+  --color-accent-strong: #0a4650;
+  --color-border: #d8e0ea;
+  --color-code-bg: #eef3f7;
+  --font-main: "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Consolas", monospace;
+}
+
+section {
+  font-family: var(--font-main);
+  color: var(--color-text);
+  background: var(--color-background);
+  font-size: 27px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  padding: 56px 64px;
+}
+
+section.title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #edf5f8 100%);
+}
+
+section.title h1 {
+  max-width: 980px;
+  font-size: 54px;
+  line-height: 1.18;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-accent-strong);
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: 42px;
+  margin-bottom: 24px;
+}
+
+h2 {
+  font-size: 34px;
+  margin-bottom: 18px;
+}
+
+h3 {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+p,
+li {
+  color: var(--color-text);
+}
+
+ul,
+ol {
+  padding-left: 1.3em;
+}
+
+li + li {
+  margin-top: 0.28em;
+}
+
+strong {
+  color: var(--color-accent-strong);
+}
+
+a {
+  color: var(--color-accent);
+}
+
+blockquote {
+  margin: 20px 0;
+  padding: 14px 18px;
+  border-left: 6px solid var(--color-accent);
+  background: var(--color-surface);
+  color: var(--color-muted);
+}
+
+code {
+  font-family: var(--font-mono);
+  background: var(--color-code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.28em;
+  font-size: 0.86em;
+}
+
+pre {
+  background: #111827;
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 18px;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 22px;
+}
+
+th,
+td {
+  border: 1px solid var(--color-border);
+  padding: 9px 11px;
+}
+
+th {
+  background: #e8f2f4;
+  color: var(--color-accent-strong);
+}
+
+section::after {
+  color: var(--color-muted);
+  font-size: 18px;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+.note {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  padding: 16px 18px;
+}
+
+.danger {
+  border-left: 6px solid #b42318;
+  background: #fff5f5;
+  padding: 14px 18px;
+}
