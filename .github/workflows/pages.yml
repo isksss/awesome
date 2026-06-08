@@ -26,9 +26,10 @@ jobs:
           node-version: 24
           cache: pnpm
       - id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
         with:
           chrome-version: stable
+          install-dependencies: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:lessons
       - run: pnpm check:links
