@@ -38,6 +38,7 @@ jobs:
       - run: pnpm build:pdf
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROME_NO_SANDBOX: "true"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/site
