@@ -10,7 +10,7 @@
     "check:links": "node scripts/check-internal-links.mjs",
     "build:site": "node scripts/build-site.mjs",
     "build:slides": "marp -I content --theme-set themes/learning.css --theme learning --html --allow-local-files --output dist/site/slides",
-    "build:pdf": "marp -I content --theme-set themes/learning.css --theme learning --pdf --allow-local-files --output dist/site/pdf",
+    "build:pdf": "marp -I content --theme-set themes/learning.css --theme learning --pdf --allow-local-files --parallel 1 --output dist/site/pdf",
     "build": "pnpm check:lessons && pnpm check:links && pnpm build:site && pnpm build:slides && pnpm build:pdf"
   },
   "devDependencies": {
