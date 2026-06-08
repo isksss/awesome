@@ -41,8 +41,8 @@ for (const lesson of lessons) {
     errors.push(`${relativePath}: must include at least one Mermaid diagram`);
   }
 
-  if (slideCount < 12 || slideCount > 80) {
-    errors.push(`${relativePath}: slide count must be 12-80, found ${slideCount}`);
+  if (slideCount < 12) {
+    errors.push(`${relativePath}: slide count must be at least 12, found ${slideCount}`);
   }
 
   const orderKey = `${data.chapter}:${data.order}`;

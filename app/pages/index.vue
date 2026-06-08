@@ -4,6 +4,21 @@ import siteData from "~/data/site.json";
 const lessons = siteData.lessons;
 const groups = siteData.groups;
 const stats = siteData.stats;
+const route = useRoute();
+const viewMode = ref<"card" | "list">(route.query.view === "list" ? "list" : "card");
+
+watch(
+  () => route.query.view,
+  (view) => {
+    viewMode.value = view === "list" ? "list" : "card";
+  },
+  { immediate: true },
+);
+
+function setViewMode(mode: "card" | "list") {
+  viewMode.value = mode;
+  navigateTo({ path: "/", query: mode === "list" ? { view: "list" } : {} }, { replace: true });
+}
 
 useHead({
   title: "awesome",
@@ -19,7 +34,27 @@ useHead({
 <template>
   <div class="min-h-screen bg-slate-50 text-slate-900">
     <SiteHeader>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <div class="flex rounded-md border border-slate-200 bg-slate-100 p-1">
+          <UButton
+            icon="i-lucide-layout-grid"
+            size="sm"
+            :variant="viewMode === 'card' ? 'solid' : 'ghost'"
+            :color="viewMode === 'card' ? 'primary' : 'neutral'"
+            @click="setViewMode('card')"
+          >
+            カード
+          </UButton>
+          <UButton
+            icon="i-lucide-list"
+            size="sm"
+            :variant="viewMode === 'list' ? 'solid' : 'ghost'"
+            :color="viewMode === 'list' ? 'primary' : 'neutral'"
+            @click="setViewMode('list')"
+          >
+            リスト
+          </UButton>
+        </div>
         <UBadge color="primary" variant="soft">{{ stats.lessonCount }} 教材</UBadge>
         <UBadge color="neutral" variant="outline">16:9 slides</UBadge>
       </div>
@@ -61,9 +96,12 @@ useHead({
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div v-if="viewMode === 'card'" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <LessonCard v-for="lesson in group.items" :key="lesson.slug" :lesson="lesson" />
         </div>
+        <ul v-else class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <LessonListItem v-for="lesson in group.items" :key="lesson.slug" :lesson="lesson" />
+        </ul>
       </section>
     </main>
   </div>

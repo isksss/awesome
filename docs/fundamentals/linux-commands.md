@@ -274,6 +274,316 @@ sudo
 
 ---
 
+## パイプでつなぐ
+
+```sh
+cat access.log | grep " 500 " | head
+grep " 500 " access.log | awk '{print $1}' | sort | uniq -c | sort -nr
+```
+
+パイプ `|` は、左の結果を右に渡す。
+
+よくある流れ:
+
+```text
+読む -> 絞る -> 整形する -> 数える -> 並べる
+```
+
+`cat file | grep` は分かりやすいが、慣れたら `grep pattern file` でよい。
+
+---
+
+## grep の実務例
+
+```sh
+grep -R "DATABASE_URL" .
+grep -R --line-number --exclude-dir=node_modules "TODO" .
+grep -E "ERROR|WARN" app.log
+```
+
+見るポイント:
+
+- `-R`: 再帰的に探す
+- `--line-number`: 行番号を出す
+- `--exclude-dir`: 探さないディレクトリ
+- `-E`: 正規表現を使う
+
+ログ調査では、まず時刻や request id で絞る。
+
+---
+
+## sed で置換する
+
+```sh
+sed 's/old/new/' file.txt
+sed 's/old/new/g' file.txt
+sed -n '10,20p' file.txt
+```
+
+ファイルを書き換える前に、標準出力で結果を見る。
+
+macOS と GNU sed では `-i` の扱いが違う。
+
+```sh
+sed -i.bak 's/old/new/g' file.txt
+```
+
+バックアップを作ると戻しやすい。
+
+---
+
+## awk で列を扱う
+
+```sh
+awk '{print $1, $2}' access.log
+awk '$9 >= 500 {print $0}' access.log
+awk '{count[$1]++} END {for (ip in count) print count[ip], ip}' access.log
+```
+
+awk は「列を取り出す」「条件で絞る」「集計する」が得意。
+
+例: status code の数を数える。
+
+```sh
+awk '{count[$9]++} END {for (code in count) print code, count[code]}' access.log
+```
+
+---
+
+## xargs でまとめて実行
+
+```sh
+find . -name "*.log" -print0 | xargs -0 wc -l
+find . -name "*.tmp" -print0 | xargs -0 rm
+```
+
+空白を含むファイル名に備えて、`-print0` と `-0` をセットで使う。
+
+削除前は `rm` の代わりに `echo` で確認する。
+
+```sh
+find . -name "*.tmp" -print0 | xargs -0 echo rm
+```
+
+---
+
+## tar と zip
+
+```sh
+tar -czf logs.tar.gz logs/
+tar -tzf logs.tar.gz | head
+tar -xzf logs.tar.gz
+zip -r logs.zip logs/
+unzip -l logs.zip
+```
+
+- `tar -c`: 作る
+- `tar -t`: 中身を見る
+- `tar -x`: 展開する
+- `z`: gzip
+
+展開前に中身を見ると、想定外の場所に展開する事故を減らせる。
+
+---
+
+## rsync で同期する
+
+```sh
+rsync -av --dry-run src/ dest/
+rsync -av src/ dest/
+rsync -av --delete src/ dest/
+```
+
+`--dry-run` で先に確認する。
+
+注意:
+
+- `src/` と `src` は意味が違う
+- `--delete` は転送先の余計なファイルを消す
+- 本番では対象パスを必ず確認する
+
+---
+
+## journalctl の見方
+
+```sh
+journalctl -u nginx
+journalctl -u nginx --since "10 minutes ago"
+journalctl -u nginx -f
+journalctl -p err..alert
+```
+
+- service 単位で見る
+- 時刻で絞る
+- follow する
+- severity で絞る
+
+障害調査では、発生時刻を先に決めるとログが読みやすい。
+
+---
+
+## プロセスを深く見る
+
+```sh
+ps aux --sort=-%mem | head
+ps aux --sort=-%cpu | head
+pgrep -af nginx
+lsof -p <pid>
+```
+
+見るもの:
+
+- CPU を使っているプロセス
+- メモリを使っているプロセス
+- 開いているファイル
+- 待受 port
+
+`kill -9` は最後の手段。まず通常の停止方法を探す。
+
+---
+
+## port と接続を見る
+
+```sh
+ss -ltnp
+ss -tunap
+curl -I http://localhost:8080
+curl -vk https://example.com
+```
+
+- `LISTEN`: 待受
+- `ESTABLISHED`: 接続中
+- `-p`: プロセス情報
+- `curl -v`: 通信の詳細
+
+「アプリが起動している」と「port が開いている」は別なので、両方見る。
+
+---
+
+## DNS を確認する
+
+```sh
+getent hosts example.com
+dig example.com
+dig +short example.com
+cat /etc/resolv.conf
+```
+
+DNS が怪しいときの順番:
+
+- 名前が引けるか
+- どの IP に解決されるか
+- resolver 設定は何か
+- TTL や CNAME はどうなっているか
+
+コンテナ内とホストでは DNS 設定が違うことがある。
+
+---
+
+## 権限トラブルの例
+
+```text
+症状: app.log に書き込めない
+```
+
+見る順番:
+
+```sh
+whoami
+id
+ls -ld .
+ls -l app.log
+namei -l app.log
+```
+
+ファイルだけでなく、途中のディレクトリに実行権限があるかも見る。
+
+---
+
+## 容量不足の例
+
+```sh
+df -h
+du -sh /var/log/* | sort -h
+find /var/log -type f -size +100M -print
+```
+
+対応の考え方:
+
+- 何が大きいか調べる
+- 消してよいものか確認する
+- service が掴んでいる deleted file も見る
+
+```sh
+lsof | grep deleted
+```
+
+ログを消す前に、ローテーション設定も確認する。
+
+---
+
+## 安全なシェルスクリプト
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly target="${1:-}"
+if [[ -z "$target" ]]; then
+  echo "usage: $0 <target>" >&2
+  exit 1
+fi
+
+echo "target=$target"
+```
+
+ポイント:
+
+- 未定義変数で落とす
+- 失敗したコマンドで止める
+- 引数を先に検証する
+- 実行対象を表示する
+
+---
+
+## コマンド履歴を活用する
+
+```sh
+history
+history | grep docker
+Ctrl-r
+```
+
+履歴は便利だが、危険なコマンドをそのまま再実行しない。
+
+確認:
+
+```sh
+pwd
+whoami
+echo "$TARGET"
+```
+
+---
+
+## トラブル時のメモの型
+
+```text
+時刻:
+対象ホスト:
+実行ユーザー:
+症状:
+見たコマンド:
+分かったこと:
+次に見ること:
+```
+
+調査ログを残すと、あとから説明しやすい。
+
+コマンドだけでなく、結果から何を判断したかも書く。
+
+---
+
 ## まとめ
 
 - 最初は「見る」コマンドを覚える
